@@ -4,8 +4,9 @@ __version__ = '0.0.1'
 __author__ = 'Adam Wen'
 __license__ = 'MIT'
 
-from .device import Device
 from .client import Client
+from .sensor import Sensor
+from .device import Device
 
 
 # I copy the following code from request....

@@ -23,10 +23,12 @@ class WrongReqMethd(Exception):
 class Client(object):
     apikey = UnmodifiedValue('apikey')
 
-    def __init__(self, username, password):
+    def __init__(self, username='', password='', apikey=''):
         self.username = username
         self.password = password
-        self.apikey = self._exchange_for_apikey()
+        self.apikey = apikey
+        if not apikey:
+            self.apikey = self._exchange_for_apikey()
         self.headers = {'U-ApiKey': self.apikey}
 
     def _exchange_for_apikey(self):

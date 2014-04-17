@@ -16,28 +16,47 @@ class Sensor(object):
     PHOTO_TYPE = 'photo'
 
     apikey = UnmodifiedValue('apikey')
-    device = UnmodifiedValue('device')
-    sensor_id = UnmodifiedValue('sensor_id')
-    sensor_type = UnmodifiedValue('sensor_type')
-    tags = ListValue('tags')
 
-    def __init__(self, apikey, device, sensor_id, sensor_type, title, tags,
-                 extra=None):
+    def __init__(self, apikey, device_id, title='', about='', tags=[],
+                 sensor_type='', sensor_id='', extra=None):
         self.apikey = apikey
-        self.device = device
-        sensor_id = sensor_id
-        self.sensor_type = title
+        self.device_id = device_id
+        self.sensor_id = sensor_id
+        self.title = title
+        self.about = about
+        self.sensor_type = sensor_type
         self.tags = tags
         self.headers = {'U-ApiKey': self.apikey}
         if self.sensor_type == Sensor.VALUE_TYPE:
             self.unit_name = extra['name']
             self.unit_symbol = extra['symbol']
 
+    @classmethod
+    def all(cls, apikey='', device_id=''):
+        headers = {'U-ApiKey': apikey}
+        url = ''.join([
+            HOST,
+            BASE_PATH,
+            '/device/%s' % device_id,
+            '/sensors'])
+        ret = requests.get(url, headers=headers)
+        if ret.ok:
+            sensor_list = []
+            for data in ret.json():
+                sensor = Sensor(
+                        apikey=apikey,
+                        device_id=device_id,
+                        sensor_id=data['id'],
+                        about=data['about'])
+                sensor_list.append(sensor)
+            return sensor_list
+        raise ValueError(
+                "HTTP_STATUS_CODE:%s\nERROR_MESSAGE: %s" % (
+                    ret.status_code, ret.content))
+
     @property
-    def contents(self):
+    def data(self):
         content = {
-                'device_id': self.device_id,
-                'sensor_id': self.sensor_id,
                 'type': self.sensor_type,
                 'title': self.title,
                 'about': self.about,
@@ -51,15 +70,35 @@ class Sensor(object):
                     })
         return content
 
-    def update(self):
+    def create(self):
+        url = ''.join([
+                HOST,
+                BASE_PATH,
+                '/device',
+                '/%s' % self.device_id,
+                '/sensors'])
+        data = dict(self.data.items() + {'type': self.sensor_type}.items())
+        ret = requests.post(
+                url,
+                headers=self.headers,
+                data=json.dumps(data))
+        if ret.ok:
+            self.sensor_id = ret.json()['sensor_id']
+            return True
+        raise ValueError(
+                "HTTP_STATUS_CODE:%s\nERROR_MESSAGE: %s" % (
+                    ret.status_code, ret.content)
+                )
+
+    def push(self):
         url = ''.join([
             HOST,
             BASE_PATH,
             '/device',
-            '/%s' % self.device.device_id,
+            '/%s' % self.device_id,
             '/sensor',
             '/%s' % self.sensor_id])
-        data = json.dumps(self.contents)
+        data = json.dumps(self.data)
         ret = requests.put(url, headers=self.headers, data=data)
         if ret.ok:
             return True
@@ -68,16 +107,17 @@ class Sensor(object):
                     ret.status_code, ret.content)
                 )
 
-    def refresh(self):
+    def pull(self):
         url = ''.join([
             HOST,
             BASE_PATH,
             '/device',
-            '/%s' % self.device.device_id,
+            '/%s' % self.device_id,
             '/sensor',
             '/%s' % self.sensor_id])
         ret = requests.get(url, headers=self.headers)
         if ret.ok:
+            print ret.content
             #TODO: update instance here
             return True
         raise ValueError(
@@ -90,7 +130,7 @@ class Sensor(object):
             HOST,
             BASE_PATH,
             '/device',
-            '/%s' % self.device.device_id,
+            '/%s' % self.device_id,
             '/sensor',
             '/%s' % self.sensor_id])
         ret = requests.delete(url, headers=self.headers)
