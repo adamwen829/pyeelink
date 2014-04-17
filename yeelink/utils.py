@@ -1,9 +1,14 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
+import datetime
 from weakref import WeakKeyDictionary
 
 HOST = "http://api.yeelink.net"
 BASE_PATH = "/v1.0"
+
+def timestamp_of_now():
+    """ return a timestamp in ISO 8601 format
+        example: "1991-08-29T01:02:03"""
 
 class UnmodifiedValue(object):
     """A descripor that deny values change"""
